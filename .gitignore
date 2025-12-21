@@ -1,0 +1,5 @@
+.venv/
+parking_data.json
+__pycache__/
+static/parked_images/*.jpg
+system_log.txt

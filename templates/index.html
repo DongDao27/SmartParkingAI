@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Parking Web AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+        .camera-wrapper { position: relative; border-radius: 10px; overflow: hidden; background: black; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .camera-feed { width: 100%; height: auto; display: block; min-height: 400px; }
+        .control-box { background: white; padding: 25px; border-radius: 12px; height: 100%; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .plate-result { font-size: 2.2rem; font-weight: 800; color: #2c3e50; text-align: center; border: 3px dashed #3498db; padding: 10px; margin: 15px 0; background: #f8f9fa; border-radius: 8px; }
+        .btn-xl { font-size: 1.2rem; font-weight: bold; padding: 15px; text-transform: uppercase; }
+        .badge-mode { position: absolute; top: 10px; left: 10px; padding: 8px 15px; border-radius: 20px; font-weight: bold; z-index: 10; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid py-4">
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="camera-wrapper mb-4">
+                <span id="modeBadge" class="badge bg-danger badge-mode">Live Camera</span>
+                <img src="{{ url_for('video_feed') }}" class="camera-feed" id="videoElement" alt="Camera Feed">
+            </div>
+            
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white d-flex justify-content-between">
+                    <h5 class="mb-0">🚗 DANH SÁCH XE TRONG BÃI</h5>
+                    <span class="badge bg-warning text-dark" id="countBadge">0 xe</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 300px;">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Biển số</th>
+                                    <th>Giờ vào</th>
+                                    <th>Ảnh</th>
+                                </tr>
+                            </thead>
+                            <tbody id="parkingTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="control-box d-flex flex-column justify-content-between">
+                <div>
+                    <h3 class="text-center text-primary fw-bold mb-4">🅿️ ĐIỀU KHIỂN</h3>
+                    
+                    <div class="d-flex gap-2 mb-4">
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="uploadImage()">
+                        <button onclick="document.getElementById('fileInput').click()" class="btn btn-outline-primary flex-grow-1 fw-bold">
+                            📂 TẢI ẢNH LÊN
+                        </button>
+                        <button onclick="resetCamera()" class="btn btn-outline-danger flex-grow-1 fw-bold">
+                            📹 BẬT CAMERA
+                        </button>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <button onclick="sendAction('in')" class="btn btn-success w-100 btn-xl shadow">
+                                XE VÀO
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button onclick="sendAction('out')" class="btn btn-danger w-100 btn-xl shadow">
+                                XE RA
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-muted fw-bold small">BIỂN SỐ NHẬN DIỆN:</label>
+                        <div id="plateDisplay" class="plate-result">---</div>
+                        <div id="messageDisplay" class="alert alert-secondary text-center fw-bold">Sẵn sàng...</div>
+                    </div>
+                </div>
+
+                <div class="border-top pt-4 mt-2">
+                    <h5 class="fw-bold">📊 Thống kê</h5>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Xe đang gửi:</span>
+                        <strong id="activeCount" class="fs-5">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Doanh thu:</span>
+                        <strong id="revenueCount" class="text-success fs-4">0 đ</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Hàm Upload Ảnh
+    async function uploadImage() {
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        document.getElementById('messageDisplay').innerHTML = '⏳ Đang tải ảnh...';
+
+        try {
+            const response = await fetch('/api/upload_image', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                // Đổi badge trạng thái
+                const badge = document.getElementById('modeBadge');
+                badge.className = 'badge bg-primary badge-mode';
+                badge.innerText = 'Chế độ: Ảnh Tĩnh';
+                
+                document.getElementById('plateDisplay').innerText = data.plate;
+                document.getElementById('messageDisplay').className = 'alert alert-info text-center fw-bold';
+                document.getElementById('messageDisplay').innerText = 'Đã tải ảnh. Bấm "Xe Vào/Ra" để xử lý.';
+            }
+        } catch (err) {
+            alert("Lỗi tải ảnh!");
+        }
+        // Reset input để chọn lại cùng 1 file được
+        fileInput.value = '';
+    }
+
+    // 2. Hàm Reset về Camera
+    async function resetCamera() {
+        await fetch('/api/reset_camera', {method: 'POST'});
+        const badge = document.getElementById('modeBadge');
+        badge.className = 'badge bg-danger badge-mode';
+        badge.innerText = 'Live Camera';
+        document.getElementById('plateDisplay').innerText = '---';
+        document.getElementById('messageDisplay').className = 'alert alert-secondary text-center fw-bold';
+        document.getElementById('messageDisplay').innerText = 'Đã quay lại Camera.';
+    }
+
+    // 3. Hàm Xử lý Check-in/out
+    async function sendAction(type) {
+        const msgBox = document.getElementById('messageDisplay');
+        const plateBox = document.getElementById('plateDisplay');
+        
+        msgBox.className = 'alert alert-warning text-center fw-bold';
+        msgBox.innerHTML = '📷 Đang xử lý...';
+        
+        try {
+            const response = await fetch('/api/action', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({type: type})
+            });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                msgBox.className = 'alert alert-success text-center fw-bold';
+                plateBox.innerText = data.plate;
+                msgBox.innerHTML = data.msg.replace(/\n/g, '<br>');
+                
+                // Update stats
+                document.getElementById('activeCount').innerText = data.stats.active;
+                document.getElementById('countBadge').innerText = data.stats.active + ' xe';
+                document.getElementById('revenueCount').innerText = new Intl.NumberFormat('vi-VN').format(data.stats.revenue) + ' đ';
+                loadTable();
+            } else {
+                msgBox.className = 'alert alert-danger text-center fw-bold';
+                plateBox.innerText = 'LỖI';
+                msgBox.innerText = data.msg;
+            }
+        } catch (err) {
+            msgBox.className = 'alert alert-danger text-center fw-bold';
+            msgBox.innerText = 'Lỗi kết nối!';
+        }
+    }
+
+    // 4. Load bảng dữ liệu
+    async function loadTable() {
+        const response = await fetch('/api/data');
+        const data = await response.json();
+        const tbody = document.getElementById('parkingTable');
+        tbody.innerHTML = '';
+
+        const entries = Object.entries(data.active).reverse();
+        for (const [plate, info] of entries) {
+            const row = `<tr>
+                <td class="fw-bold text-primary">${plate}</td>
+                <td>${info.in_time}</td>
+                <td><a href="${info.img}" target="_blank" class="btn btn-sm btn-outline-secondary">Xem</a></td>
+            </tr>`;
+            tbody.innerHTML += row;
+        }
+    }
+
+    window.onload = loadTable;
+</script>
+
+</body>
+</html>
