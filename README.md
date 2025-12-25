@@ -16,7 +16,6 @@
 4. [Luồng Xử Lý & Thuật Toán](#-luồng-xử-lý--thuật-toán)
 5. [Hướng Dẫn Cài Đặt](#-hướng-dẫn-cài-đặt)
 6. [Cấu Trúc Dự Án](#-cấu-trúc-dự-án)
-7. [Đội Ngũ Phát Triển](#-đội-ngũ-phát-triển)
 
 ---
 
@@ -102,16 +101,16 @@ python -m venv .venv
 👉 https://www.google.com/search?q=http://127.0.0.1:5000📂 
 
 ### Cấu Trúc Dự ÁnPlaintextSmartParkingAI/
-├── .venv/                 # Môi trường ảo Python (Virtual Environment)
-├── static/
-│   └── parked_images/     # Kho ảnh: Lưu hình ảnh xe khi Check-in
-├── templates/
-│   └── index.html         # Frontend: Giao diện người dùng (Dashboard)
-├── app.py                 # Backend: Mã nguồn chính (Server & AI Logic)
-├── best.pt                # Model: File trọng số YOLOv8 đã train
-├── parking_data.json      # Database: Lưu dữ liệu xe và lịch sử
-├── requirements.txt       # Config: Danh sách thư viện phụ thuộc
-└── README.md              # Document: Tài liệu dự án
+### ├── .venv/                 # Môi trường ảo Python (Virtual Environment)
+### ├── static/
+### │   └── parked_images/     # Kho ảnh: Lưu hình ảnh xe khi Check-in
+### ├── templates/
+### │   └── index.html         # Frontend: Giao diện người dùng (Dashboard)
+### ├── app.py                 # Backend: Mã nguồn chính (Server & AI Logic)
+### ├── best.pt                # Model: File trọng số YOLOv8 đã train
+### ├── parking_data.json      # Database: Lưu dữ liệu xe và lịch sử
+### ├── requirements.txt       # Config: Danh sách thư viện phụ thuộc
+### └── README.md              # Document: Tài liệu dự án
 
 
 <i>Đồ án môn học: Trí Tuệ Nhân Tạo & Thị Giác Máy Tính</i></div>
