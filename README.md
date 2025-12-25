@@ -89,12 +89,19 @@ Hệ thống áp dụng bảng giá lũy tiến:
 ### Bước 1: Clone dự án
 git clone [https://github.com/TEN_GITHUB_CUA_BAN/SmartParkingAI.git](https://github.com/TEN_GITHUB_CUA_BAN/SmartParkingAI.git)
 cd SmartParkingAI
-Bước 2: Thiết lập môi trường ảo (Khuyến nghị)Bash# Windows
+
+### Bước 2: Thiết lập môi trường ảo (Khuyến nghị)Bash# Windows
 python -m venv .venv
 .venv\Scripts\activate
-Bước 3: Cài đặt thư việnBashpip install -r requirements.txt
-Bước 4: Chạy ứng dụngĐảm bảo file model best.pt đã nằm trong thư mục gốc.Bashpython app.py
-Bước 5: Sử dụngMở trình duyệt web và truy cập: 👉 https://www.google.com/search?q=http://127.0.0.1:5000📂 Cấu Trúc Dự ÁnPlaintextSmartParkingAI/
+
+### Bước 3: Cài đặt thư việnBashpip install -r requirements.txt
+
+### Bước 4: Chạy ứng dụngĐảm bảo file model best.pt đã nằm trong thư mục gốc.Bashpython app.py
+
+### Bước 5: Sử dụngMở trình duyệt web và truy cập: 
+👉 https://www.google.com/search?q=http://127.0.0.1:5000📂 
+
+### Cấu Trúc Dự ÁnPlaintextSmartParkingAI/
 ├── .venv/                 # Môi trường ảo Python (Virtual Environment)
 ├── static/
 │   └── parked_images/     # Kho ảnh: Lưu hình ảnh xe khi Check-in
@@ -105,4 +112,6 @@ Bước 5: Sử dụngMở trình duyệt web và truy cập: 👉 https://www.g
 ├── parking_data.json      # Database: Lưu dữ liệu xe và lịch sử
 ├── requirements.txt       # Config: Danh sách thư viện phụ thuộc
 └── README.md              # Document: Tài liệu dự án
+
+
 <i>Đồ án môn học: Trí Tuệ Nhân Tạo & Thị Giác Máy Tính</i></div>
