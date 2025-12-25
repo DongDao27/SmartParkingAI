@@ -3,94 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Parking Web AI</title>
+    <title>Smart Parking Control Center</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <style>
-        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
-        .camera-wrapper { position: relative; border-radius: 10px; overflow: hidden; background: black; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .camera-feed { width: 100%; height: auto; display: block; min-height: 400px; }
-        .control-box { background: white; padding: 25px; border-radius: 12px; height: 100%; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .plate-result { font-size: 2.2rem; font-weight: 800; color: #2c3e50; text-align: center; border: 3px dashed #3498db; padding: 10px; margin: 15px 0; background: #f8f9fa; border-radius: 8px; }
-        .btn-xl { font-size: 1.2rem; font-weight: bold; padding: 15px; text-transform: uppercase; }
-        .badge-mode { position: absolute; top: 10px; left: 10px; padding: 8px 15px; border-radius: 20px; font-weight: bold; z-index: 10; }
+        :root {
+            --bg-dark: #0f172a;       /* Nền chính tối thẫm */
+            --bg-card: #1e293b;       /* Nền card */
+            --text-main: #f1f5f9;     /* Chữ sáng (trắng đục cho đỡ mỏi mắt) */
+            --text-muted: #94a3b8;    /* Chữ mờ */
+            --accent-gold: #f59e0b;   /* Màu vàng kim */
+            --border-color: #334155;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Be Vietnam Pro', sans-serif; /* Font chính cho toàn trang */
+            overflow-x: hidden;
+            font-size: 0.95rem;
+        }
+
+        /* --- UTILS --- */
+        .text-gold { color: var(--accent-gold) !important; }
+        .card-custom {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            height: 100%;
+            padding: 20px;
+        }
+        
+        /* --- KHU VỰC A: INPUT --- */
+        .btn-input {
+            background: transparent; border: 1px solid var(--border-color);
+            color: var(--text-muted); width: 100%; text-align: left;
+            padding: 12px 15px; margin-bottom: 10px; border-radius: 8px; 
+            transition: 0.2s; font-weight: 500;
+        }
+        .btn-input:hover { 
+            border-color: var(--accent-gold); color: var(--text-main); 
+            background: rgba(245, 158, 11, 0.1); 
+        }
+
+        /* --- KHU VỰC B: CAMERA & BARIE --- */
+        .camera-frame {
+            border: 2px solid var(--border-color); border-radius: 8px;
+            background: #000; height: 400px; position: relative; overflow: hidden;
+        }
+        .camera-feed { width: 100%; height: 100%; object-fit: contain; }
+        .camera-overlay {
+            position: absolute; top: 15px; left: 15px; background: rgba(220, 38, 38, 0.9); 
+            color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; 
+            font-weight: 700; letter-spacing: 1px; animation: blink 2s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0.6; } }
+
+        .barrier-zone {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid var(--border-color); border-radius: 8px;
+            height: 140px; position: relative; margin-top: 15px; overflow: hidden;
+        }
+        .barrier-pole {
+            width: 40px; height: 90px; background: linear-gradient(90deg, #475569, #64748b, #475569);
+            position: absolute; bottom: 0; left: 100px; border-radius: 6px 6px 0 0; z-index: 2;
+        }
+        .barrier-arm {
+            width: 400px; height: 18px;
+            background: repeating-linear-gradient(45deg, #dc2626, #dc2626 30px, #f8fafc 30px, #f8fafc 60px);
+            position: absolute; bottom: 65px; left: 120px; border-radius: 4px; 
+            transform-origin: 10px center; transition: transform 1.5s cubic-bezier(0.34, 1.56, 0.64, 1); /* Hiệu ứng nảy */
+            z-index: 1; box-shadow: 2px 4px 6px rgba(0,0,0,0.5);
+        }
+        .barrier-arm.open { transform: rotate(-85deg); }
+        
+        .traffic-light-box {
+            position: absolute; bottom: 20px; left: 30px;
+            width: 50px; height: 100px; background: #0f172a; border: 2px solid #334155; border-radius: 8px;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-around; padding: 5px 0;
+        }
+        .light { width: 30px; height: 30px; border-radius: 50%; background: #333; transition: 0.3s; }
+        .light.red.active { background: #ef4444; box-shadow: 0 0 25px #ef4444; }
+        .light.green.active { background: #10b981; box-shadow: 0 0 25px #10b981; }
+
+        /* --- KHU VỰC C: CONTROL PANEL --- */
+        .plate-box {
+            background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 4px solid #334155; 
+            color: #0f172a;
+            font-family: 'Chakra Petch', sans-serif; /* Font số xe chuyên dụng */
+            font-size: 3rem; 
+            font-weight: 700;
+            text-align: center; 
+            padding: 10px; 
+            border-radius: 8px; 
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+            text-transform: uppercase;
+        }
+        
+        .btn-action {
+            height: 65px; font-size: 1.1rem; font-weight: 700; text-transform: uppercase;
+            border: none; border-radius: 8px; width: 100%; color: white; transition: 0.2s;
+            letter-spacing: 0.5px;
+        }
+        .btn-in { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3); }
+        .btn-out { background: linear-gradient(135deg, #b91c1c, #ef4444); box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3); }
+        .btn-action:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-action:active { transform: translateY(0); }
+
+        .bill-receipt {
+            background: #fff; color: #1e293b; padding: 15px; border-radius: 6px;
+            font-family: 'Be Vietnam Pro', sans-serif; /* Dễ đọc cho hóa đơn */
+            font-size: 0.9rem;
+            border-top: 5px dashed #cbd5e1; display: none; margin-top: 20px;
+        }
+
+        /* --- TABLE --- */
+        .nav-tabs { border-bottom: 1px solid var(--border-color); }
+        .nav-link { color: var(--text-muted); border: none; font-weight: 600; padding: 10px 20px; }
+        .nav-link.active { 
+            background: transparent; color: var(--accent-gold); 
+            border-bottom: 3px solid var(--accent-gold); 
+        }
+        .nav-link:hover { color: var(--text-main); }
+        
+        .table-dark-custom { --bs-table-bg: transparent; --bs-table-color: var(--text-main); border-color: var(--border-color); }
+        .table-dark-custom th { 
+            background-color: rgba(51, 65, 85, 0.5); 
+            color: var(--accent-gold); 
+            text-transform: uppercase; 
+            font-size: 0.8rem; 
+            font-weight: 700; 
+            padding-top: 15px; padding-bottom: 15px;
+        }
+        .table img { width: 60px; height: 40px; object-fit: cover; border: 1px solid var(--border-color); border-radius: 4px; transition: 0.2s; }
+        .table img:hover { transform: scale(3); z-index: 99; border-color: var(--accent-gold); cursor: zoom-in; }
+        
+        /* Stats */
+        .stat-card { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 15px; text-align: center; }
+        .stat-val { font-size: 1.6rem; font-weight: 700; color: white; }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
 
-<div class="container-fluid py-4">
-    <div class="row g-4">
-        <div class="col-lg-8">
-            <div class="camera-wrapper mb-4">
-                <span id="modeBadge" class="badge bg-danger badge-mode">Live Camera</span>
-                <img src="{{ url_for('video_feed') }}" class="camera-feed" id="videoElement" alt="Camera Feed">
+<nav class="navbar navbar-dark bg-transparent border-bottom border-secondary mb-3 py-3">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center" href="#">
+            <i class="fa-solid fa-square-parking fa-2x text-gold me-3"></i>
+            <div>
+                <div class="fw-bold fs-4 text-uppercase" style="letter-spacing: 1px;">Smart Parking</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">HỆ THỐNG QUẢN LÝ BÃI XE THÔNG MINH</div>
             </div>
-            
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-dark text-white d-flex justify-content-between">
-                    <h5 class="mb-0">🚗 DANH SÁCH XE TRONG BÃI</h5>
-                    <span class="badge bg-warning text-dark" id="countBadge">0 xe</span>
+        </a>
+        <div class="text-end">
+            <div id="sysClock" class="fw-bold text-main fs-5" style="font-variant-numeric: tabular-nums;">00:00:00</div>
+            <div style="font-size: 0.75rem; font-weight: 600;" class="text-success"><i class="fa-solid fa-circle fa-xs me-1"></i>HỆ THỐNG ONLINE</div>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid px-4">
+    <div class="row g-4">
+        
+        <div class="col-lg-2">
+            <div class="card-custom">
+                <h6 class="text-gold mb-4 fw-bold small text-uppercase"><i class="fa-solid fa-sliders me-2"></i>Nguồn Dữ Liệu</h6>
+                <div class="d-grid gap-2">
+                    <button onclick="resetCamera()" class="btn btn-input"><i class="fa-solid fa-video text-danger me-2"></i> Camera Trực Tiếp</button>
+                    <button onclick="document.getElementById('fileInput').click()" class="btn btn-input"><i class="fa-solid fa-image text-primary me-2"></i> Tải Ảnh Test</button>
+                    <input type="file" id="fileInput" hidden onchange="uploadImage()">
+                    <button onclick="resetCamera()" class="btn btn-input"><i class="fa-solid fa-rotate text-success me-2"></i> Làm Mới</button>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 300px;">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light sticky-top">
-                                <tr>
-                                    <th>Biển số</th>
-                                    <th>Giờ vào</th>
-                                    <th>Ảnh</th>
-                                </tr>
-                            </thead>
-                            <tbody id="parkingTable"></tbody>
-                        </table>
+                <hr class="border-secondary my-4">
+                <div class="stat-card mb-3">
+                    <div class="stat-val" id="statActive">0</div>
+                    <div class="stat-label">Xe Đang Gửi</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val text-gold" id="statRevenue">0 đ</div>
+                    <div class="stat-label">Tổng Doanh Thu</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card-custom p-2 d-flex flex-column">
+                <div class="camera-frame flex-grow-1">
+                    <div class="camera-overlay">TRỰC TIẾP</div>
+                    <img src="{{ url_for('video_feed') }}" class="camera-feed" id="mainCam">
+                </div>
+                
+                <div class="barrier-zone">
+                    <div class="traffic-light-box">
+                        <div id="lightRed" class="light red active"></div>
+                        <div id="lightGreen" class="light green"></div>
                     </div>
+                    <div class="barrier-pole"></div>
+                    <div id="barArm" class="barrier-arm"></div>
+                    
+                    <div style="position: absolute; bottom: 0; width: 100%; height: 15px; background: repeating-linear-gradient(90deg, #333, #333 50px, #fbbf24 50px, #fbbf24 100px); opacity: 0.4;"></div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-4">
-            <div class="control-box d-flex flex-column justify-content-between">
-                <div>
-                    <h3 class="text-center text-primary fw-bold mb-4">🅿️ ĐIỀU KHIỂN</h3>
-                    
-                    <div class="d-flex gap-2 mb-4">
-                        <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="uploadImage()">
-                        <button onclick="document.getElementById('fileInput').click()" class="btn btn-outline-primary flex-grow-1 fw-bold">
-                            📂 TẢI ẢNH LÊN
-                        </button>
-                        <button onclick="resetCamera()" class="btn btn-outline-danger flex-grow-1 fw-bold">
-                            📹 BẬT CAMERA
-                        </button>
-                    </div>
-
-                    <div class="row g-3 mb-4">
-                        <div class="col-6">
-                            <button onclick="sendAction('in')" class="btn btn-success w-100 btn-xl shadow">
-                                XE VÀO
-                            </button>
-                        </div>
-                        <div class="col-6">
-                            <button onclick="sendAction('out')" class="btn btn-danger w-100 btn-xl shadow">
-                                XE RA
-                            </button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="text-muted fw-bold small">BIỂN SỐ NHẬN DIỆN:</label>
-                        <div id="plateDisplay" class="plate-result">---</div>
-                        <div id="messageDisplay" class="alert alert-secondary text-center fw-bold">Sẵn sàng...</div>
-                    </div>
+            <div class="card-custom">
+                <h5 class="text-center text-gold mb-4 fw-bold text-uppercase">Bảng Điều Khiển</h5>
+                
+                <div class="mb-2 text-muted small text-uppercase fw-bold ps-1">Biển số nhận diện:</div>
+                <div id="plateDisplay" class="plate-box">---</div>
+                
+                <div id="statusMsg" class="alert alert-dark border-secondary text-center mb-4 small fw-bold" style="color: var(--text-muted)">
+                    <i class="fa-solid fa-circle-info me-1"></i> Vui lòng chọn thao tác...
                 </div>
 
-                <div class="border-top pt-4 mt-2">
-                    <h5 class="fw-bold">📊 Thống kê</h5>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Xe đang gửi:</span>
-                        <strong id="activeCount" class="fs-5">0</strong>
+                <div class="row g-3">
+                    <div class="col-6"><button onclick="sendAction('in')" class="btn-action btn-in"><i class="fa-solid fa-arrow-right-to-bracket me-2"></i>XE VÀO</button></div>
+                    <div class="col-6"><button onclick="sendAction('out')" class="btn-action btn-out"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i>XE RA</button></div>
+                </div>
+
+                <div id="billInfo" class="bill-receipt">
+                    <div class="text-center fw-bold border-bottom border-secondary pb-2 mb-2 fs-6">HÓA ĐƠN ĐIỆN TỬ</div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Thời gian gửi:</span>
+                        <b id="billTime" class="text-dark">0 phút</b>
                     </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Doanh thu:</span>
-                        <strong id="revenueCount" class="text-success fs-4">0 đ</strong>
+                    <div class="d-flex justify-content-between mt-3 pt-2 border-top border-secondary fs-5 fw-bold">
+                        <span>THÀNH TIỀN:</span>
+                        <span id="billCost" class="text-danger">0 đ</span>
+                    </div>
+                    <div class="text-center mt-3 small text-muted fst-italic">Cảm ơn quý khách!</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card-custom p-0 overflow-hidden">
+                <div class="p-3 bg-opacity-10 bg-white border-bottom border-secondary">
+                    <ul class="nav nav-tabs border-0" id="myTab" role="tablist">
+                        <li class="nav-item me-3"><button class="nav-link active" id="tab1" data-bs-toggle="tab" data-bs-target="#content1"><i class="fa-solid fa-list me-2"></i>XE TRONG BÃI</button></li>
+                        <li class="nav-item"><button class="nav-link" id="tab2" data-bs-toggle="tab" data-bs-target="#content2"><i class="fa-solid fa-clock-rotate-left me-2"></i>LỊCH SỬ RA VÀO</button></li>
+                    </ul>
+                </div>
+                
+                <div class="tab-content p-3">
+                    <div class="tab-pane fade show active" id="content1">
+                        <div class="table-responsive" style="max-height: 250px">
+                            <table class="table table-dark-custom table-hover align-middle">
+                                <thead><tr><th style="width: 50px;">#</th><th>Biển số</th><th>Giờ vào</th><th>Ảnh Check-in</th></tr></thead>
+                                <tbody id="tableActive"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="content2">
+                        <div class="table-responsive" style="max-height: 250px">
+                            <table class="table table-dark-custom table-hover align-middle">
+                                <thead><tr><th style="width: 50px;">#</th><th>Biển số</th><th>Giờ vào</th><th>Giờ ra</th><th>Doanh thu</th></tr></thead>
+                                <tbody id="tableHistory"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -98,110 +279,89 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // 1. Hàm Upload Ảnh
-    async function uploadImage() {
-        const fileInput = document.getElementById('fileInput');
-        const file = fileInput.files[0];
-        if (!file) return;
+    setInterval(() => { document.getElementById('sysClock').innerText = new Date().toLocaleTimeString('vi-VN'); }, 1000);
 
-        const formData = new FormData();
-        formData.append('image', file);
-
-        document.getElementById('messageDisplay').innerHTML = '⏳ Đang tải ảnh...';
-
-        try {
-            const response = await fetch('/api/upload_image', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await response.json();
-            
-            if (data.status === 'success') {
-                // Đổi badge trạng thái
-                const badge = document.getElementById('modeBadge');
-                badge.className = 'badge bg-primary badge-mode';
-                badge.innerText = 'Chế độ: Ảnh Tĩnh';
-                
-                document.getElementById('plateDisplay').innerText = data.plate;
-                document.getElementById('messageDisplay').className = 'alert alert-info text-center fw-bold';
-                document.getElementById('messageDisplay').innerText = 'Đã tải ảnh. Bấm "Xe Vào/Ra" để xử lý.';
-            }
-        } catch (err) {
-            alert("Lỗi tải ảnh!");
-        }
-        // Reset input để chọn lại cùng 1 file được
-        fileInput.value = '';
+    function triggerBarrier() {
+        const bar = document.getElementById('barArm');
+        const lRed = document.getElementById('lightRed');
+        const lGreen = document.getElementById('lightGreen');
+        lRed.classList.remove('active'); lGreen.classList.add('active'); bar.classList.add('open');
+        setTimeout(() => { bar.classList.remove('open'); lGreen.classList.remove('active'); lRed.classList.add('active'); }, 5000);
     }
 
-    // 2. Hàm Reset về Camera
+    async function sendAction(type) {
+        const msgBox = document.getElementById('statusMsg');
+        const billInfo = document.getElementById('billInfo');
+        msgBox.className = 'alert alert-warning border-warning text-center fw-bold';
+        msgBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Đang xử lý...';
+        billInfo.style.display = 'none';
+
+        try {
+            const res = await fetch('/api/action', {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({type: type})
+            });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                document.getElementById('plateDisplay').innerText = data.plate;
+                msgBox.className = 'alert alert-success border-success text-center fw-bold';
+                msgBox.innerHTML = `<i class="fa-solid fa-check-circle me-2"></i> ${data.msg}`;
+                triggerBarrier();
+                if (type === 'out') {
+                    billInfo.style.display = 'block';
+                    document.getElementById('billTime').innerText = data.minutes + ' phút';
+                    document.getElementById('billCost').innerText = new Intl.NumberFormat('vi-VN').format(data.cost) + ' đ';
+                }
+                loadData();
+            } else {
+                msgBox.className = 'alert alert-danger border-danger text-center fw-bold';
+                msgBox.innerHTML = `<i class="fa-solid fa-circle-xmark me-2"></i> ${data.msg}`;
+                document.getElementById('plateDisplay').innerText = 'ERROR';
+            }
+        } catch (err) { msgBox.innerText = 'Lỗi kết nối Server!'; }
+    }
+
+    async function uploadImage() {
+        const file = document.getElementById('fileInput').files[0];
+        if (!file) return;
+        const form = new FormData(); form.append('image', file);
+        const res = await fetch('/api/upload_image', {method: 'POST', body: form});
+        const data = await res.json();
+        if(data.status === 'success') {
+            document.getElementById('plateDisplay').innerText = data.plate;
+            document.getElementById('statusMsg').className = 'alert alert-info border-info text-center fw-bold';
+            document.getElementById('statusMsg').innerText = 'Ảnh đã tải. Bấm "XE VÀO" để lưu.';
+        }
+    }
+
     async function resetCamera() {
         await fetch('/api/reset_camera', {method: 'POST'});
-        const badge = document.getElementById('modeBadge');
-        badge.className = 'badge bg-danger badge-mode';
-        badge.innerText = 'Live Camera';
         document.getElementById('plateDisplay').innerText = '---';
-        document.getElementById('messageDisplay').className = 'alert alert-secondary text-center fw-bold';
-        document.getElementById('messageDisplay').innerText = 'Đã quay lại Camera.';
+        document.getElementById('statusMsg').className = 'alert alert-dark border-secondary text-center fw-bold';
+        document.getElementById('statusMsg').innerText = 'Chế độ Camera Live';
     }
 
-    // 3. Hàm Xử lý Check-in/out
-    async function sendAction(type) {
-        const msgBox = document.getElementById('messageDisplay');
-        const plateBox = document.getElementById('plateDisplay');
-        
-        msgBox.className = 'alert alert-warning text-center fw-bold';
-        msgBox.innerHTML = '📷 Đang xử lý...';
-        
-        try {
-            const response = await fetch('/api/action', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({type: type})
-            });
-            const data = await response.json();
-            
-            if (data.status === 'success') {
-                msgBox.className = 'alert alert-success text-center fw-bold';
-                plateBox.innerText = data.plate;
-                msgBox.innerHTML = data.msg.replace(/\n/g, '<br>');
-                
-                // Update stats
-                document.getElementById('activeCount').innerText = data.stats.active;
-                document.getElementById('countBadge').innerText = data.stats.active + ' xe';
-                document.getElementById('revenueCount').innerText = new Intl.NumberFormat('vi-VN').format(data.stats.revenue) + ' đ';
-                loadTable();
-            } else {
-                msgBox.className = 'alert alert-danger text-center fw-bold';
-                plateBox.innerText = 'LỖI';
-                msgBox.innerText = data.msg;
-            }
-        } catch (err) {
-            msgBox.className = 'alert alert-danger text-center fw-bold';
-            msgBox.innerText = 'Lỗi kết nối!';
-        }
+    async function loadData() {
+        const res = await fetch('/api/data');
+        const data = await res.json();
+        document.getElementById('statActive').innerText = Object.keys(data.active).length;
+        document.getElementById('statRevenue').innerText = new Intl.NumberFormat('vi-VN').format(data.stats.revenue) + ' đ';
+
+        let html1 = '';
+        Object.entries(data.active).reverse().forEach(([plate, info], i) => {
+            html1 += `<tr><td>${i+1}</td><td class="fw-bold text-gold" style="font-family: 'Chakra Petch'; letter-spacing: 1px;">${plate}</td><td>${info.in_time}</td><td><img src="${info.img}" onclick="window.open(this.src)"></td></tr>`;
+        });
+        document.getElementById('tableActive').innerHTML = html1;
+
+        let html2 = '';
+        data.history.reverse().forEach((item, i) => {
+            html2 += `<tr><td>${i+1}</td><td class="fw-bold" style="font-family: 'Chakra Petch'; letter-spacing: 1px;">${item.plate}</td><td>${item.in}</td><td>${item.out}</td><td class="text-success fw-bold">${new Intl.NumberFormat('vi-VN').format(item.cost)} đ</td></tr>`;
+        });
+        document.getElementById('tableHistory').innerHTML = html2;
     }
-
-    // 4. Load bảng dữ liệu
-    async function loadTable() {
-        const response = await fetch('/api/data');
-        const data = await response.json();
-        const tbody = document.getElementById('parkingTable');
-        tbody.innerHTML = '';
-
-        const entries = Object.entries(data.active).reverse();
-        for (const [plate, info] of entries) {
-            const row = `<tr>
-                <td class="fw-bold text-primary">${plate}</td>
-                <td>${info.in_time}</td>
-                <td><a href="${info.img}" target="_blank" class="btn btn-sm btn-outline-secondary">Xem</a></td>
-            </tr>`;
-            tbody.innerHTML += row;
-        }
-    }
-
-    window.onload = loadTable;
+    window.onload = loadData;
 </script>
-
 </body>
 </html>
